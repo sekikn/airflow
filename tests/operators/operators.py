@@ -71,6 +71,32 @@ class MySqlTest(unittest.TestCase):
             sql=sql, dag=self.dag)
         t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE, ignore_ti_state=True)
 
+    def mysql_hook_test_bulk_dump(self):
+        from airflow.hooks.mysql_hook import MySqlHook
+        h = MySqlHook('airflow_ci')
+        with h.get_conn() as c:
+            c.execute("SELECT @@secure_file_priv")
+            if c.fetchone()[0] != "":
+                return unittest.skip("""
+                    This test runs only if secure_file_priv is set to empty
+                    since we can't clean up properly if it's set to a directory
+                    which we don't have permissions (e.g. /var/lib/mysql-files).
+                """)
+            import tempfile
+            t = tempfile.mktemp()
+            h.bulk_dump("baby_names", t)
+
+        with open(t) as f:
+            a = f.read().splitlines()
+            assert len(a) == 53
+            assert any(e.split("\t") == ["1880", "John", "0.081541", "boy"]
+                       for e in a)
+
+        try:
+            os.remove(t)
+        except:
+            pass
+
     def mysql_hook_test_bulk_load(self):
         records = ("foo", "bar", "baz")
 

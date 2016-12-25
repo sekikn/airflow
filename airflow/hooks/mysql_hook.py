@@ -69,6 +69,18 @@ class MySqlHook(DbApiHook):
         conn = MySQLdb.connect(**conn_config)
         return conn
 
+    def bulk_dump(self, table, tmp_file):
+        """
+        Dumps a database table into a tab-delimited file
+        """
+        conn = self.get_conn()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT * INTO OUTFILE '{tmp_file}'
+            FROM {table}
+            """.format(**locals()))
+        conn.commit()
+
     def bulk_load(self, table, tmp_file):
         """
         Loads a tab-delimited file into a database table
