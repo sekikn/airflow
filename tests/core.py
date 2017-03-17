@@ -30,6 +30,7 @@ import signal
 from time import time as timetime
 from time import sleep
 import warnings
+import logging
 
 from dateutil.relativedelta import relativedelta
 import sqlalchemy
@@ -2331,6 +2332,42 @@ class EmailSmtpTest(unittest.TestCase):
         utils.email.send_MIME_email('from', 'to', MIMEMultipart(), dryrun=True)
         self.assertFalse(mock_smtp.called)
         self.assertFalse(mock_smtp_ssl.called)
+
+class LogTest(unittest.TestCase):
+
+    def _log(self):
+        handler = logging.StreamHandler(self.sio)
+        logger = logging.getLogger()
+        logger.addHandler(handler)
+
+        logging.info("info")
+        logging.warn("warn")
+
+        self.sio.flush()
+        return self.sio.getvalue()
+
+    def setUp(self):
+        configuration.load_test_config()
+        self.sio = six.StringIO()
+
+    def test_default_log_level(self):
+        s = self._log()
+        self.assertTrue("info" in s)
+        self.assertTrue("warn" in s)
+
+    def test_change_log_level_to_info(self):
+        configuration.set("core", "LOGGING_LEVEL", "INFO")
+        settings.configure_logging()
+        s = self._log()
+        self.assertTrue("info" in s)
+        self.assertTrue("warn" in s)
+
+    def test_change_log_level_to_warn(self):
+        configuration.set("core", "LOGGING_LEVEL", "WARNING")
+        settings.configure_logging()
+        s = self._log()
+        self.assertFalse("info" in s)
+        self.assertTrue("warn" in s)
 
 if __name__ == '__main__':
     unittest.main()
