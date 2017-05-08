@@ -71,6 +71,7 @@ PyOpenSSL
 PySmbClient
 python-daemon
 python-dateutil
+python-nvd3
 redis
 rednose
 requests
@@ -83,6 +84,7 @@ Sphinx-PyPI-upload
 sphinx_rtd_theme
 sqlalchemy
 statsd
+tabulate
 thrift
 thrift_sasl
 unicodecsv
