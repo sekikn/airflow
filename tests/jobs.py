@@ -147,19 +147,16 @@ class BackfillJobTest(unittest.TestCase):
         Test backfilling example dags
         """
 
-        # some DAGs really are just examples... but try to make them work!
-        skip_dags = [
-            'example_http_operator',
-            'example_twitter_dag',
-            'example_trigger_target_dag',
-            'example_trigger_controller_dag',  # tested above
-            'test_utils',  # sleeps forever
+        # Since running all DAGs takes too long time on Travis which resource
+        # developers share, put only representative DAGs into whitelist.
+        whitelist = [
+            'example_bash_operator.py',
         ]
 
         logger = logging.getLogger('BackfillJobTest.test_backfill_examples')
         dags = [
             dag for dag in self.dagbag.dags.values()
-            if 'example_dags' in dag.full_filepath and dag.dag_id not in skip_dags
+            if 'example_dags' in dag.full_filepath and dag.dag_id in whitelist
         ]
 
         for dag in dags:
