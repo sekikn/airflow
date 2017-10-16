@@ -147,10 +147,10 @@ class BackfillJobTest(unittest.TestCase):
         Test backfilling example dags
         """
 
-        # Since running all DAGs takes too long time on Travis which resource
-        # developers share, put only representative DAGs into whitelist.
+        # Put only representative DAGs into whitelist, since running all
+        # DAGs takes long time on Travis which resource developers share.
         whitelist = [
-            'example_bash_operator.py',
+            'example_bash_operator',
         ]
 
         logger = logging.getLogger('BackfillJobTest.test_backfill_examples')
