@@ -209,7 +209,7 @@ class DbApiHook(BaseHook):
                         l.append(self._serialize_cell(cell, conn))
                     values = tuple(l)
                     placeholders = ["%s",]*len(values)
-                    sql = "INSERT INTO {0} {1} VALUES ({2});".format(
+                    sql = "INSERT INTO {0} {1} VALUES ({2})".format(
                         table,
                         target_fields,
                         ",".join(placeholders))
