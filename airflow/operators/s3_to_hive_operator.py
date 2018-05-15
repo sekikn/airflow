@@ -52,8 +52,9 @@ class S3ToHiveTransfer(BaseOperator):
     :param s3_key: The key to be retrieved from S3
     :type s3_key: str
     :param field_dict: A dictionary of the fields name in the file
-        as keys and their Hive types as values
-    :type field_dict: dict
+        as keys and their Hive types as values.
+        Note that it must be OrderedDict so as to keep columns' order.
+    :type field_dict: OrderedDict
     :param hive_table: target Hive table, use dot notation to target a
         specific database
     :type hive_table: str
