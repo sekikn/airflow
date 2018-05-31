@@ -17,6 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import os
 import psycopg2
 import psycopg2.extensions
 from contextlib import closing
@@ -64,10 +65,14 @@ class PostgresHook(DbApiHook):
         Executes SQL using psycopg2 copy_expert method
         Necessary to execute COPY command without access to a superuser
         """
-        with open(filename, 'w+') as f:
+        if not os.path.isfile(filename):
+            open(filename, 'w').close()
+
+        with open(filename, 'r+') as f:
             with closing(self.get_conn()) as conn:
                 with closing(conn.cursor()) as cur:
                     cur.copy_expert(sql, f)
+                    f.truncate(f.tell())
                     conn.commit()
 
     @staticmethod
