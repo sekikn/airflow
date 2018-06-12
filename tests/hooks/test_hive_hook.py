@@ -21,6 +21,7 @@
 import datetime
 import itertools
 import pandas as pd
+import six
 import random
 
 import mock
@@ -320,6 +321,116 @@ class TestHiveMetastoreHook(HiveEnvironmentTest):
 
 
 class TestHiveServer2Hook(unittest.TestCase):
+
+    skip_msg = "HiveServer2Hook doesn't work on Python2 for now. See AIRFLOW-2514."
+
+    def setUp(self):
+        configuration.load_test_config()
+        self.nondefault_schema = "nondefault"
+
     def test_get_conn(self):
         hook = HiveServer2Hook()
         hook.get_conn()
+
+    @unittest.skipIf(six.PY2, skip_msg)
+    def test_select_conn(self):
+        from airflow.hooks.hive_hooks import HiveServer2Hook
+        sql = "select 1"
+        hook = HiveServer2Hook()
+        hook.get_records(sql)
+
+    @unittest.skipIf(six.PY2, skip_msg)
+    def test_multi_statements(self):
+        from airflow.hooks.hive_hooks import HiveServer2Hook
+        sqls = [
+            "CREATE TABLE IF NOT EXISTS test_multi_statements (i INT)",
+            "DROP TABLE test_multi_statements",
+        ]
+        hook = HiveServer2Hook()
+        hook.get_records(sqls)
+
+    @unittest.skipIf(six.PY2, skip_msg)
+    def test_to_csv(self):
+        from airflow.hooks.hive_hooks import HiveServer2Hook
+        sql = "select 1"
+        hook = HiveServer2Hook()
+        hook.to_csv(hql=sql, csv_filepath="/tmp/test_to_csv")
+
+    @mock.patch('impala.dbapi.connect', return_value="foo")
+    def test_select_conn_with_schema(self, connect_mock):
+        from airflow.hooks.hive_hooks import HiveServer2Hook
+
+        # Configure
+        hook = HiveServer2Hook()
+
+        # Run
+        hook.get_conn(self.nondefault_schema)
+
+        # Verify
+        self.assertTrue(connect_mock.called)
+        (args, kwargs) = connect_mock.call_args_list[0]
+        self.assertEqual(self.nondefault_schema, kwargs['database'])
+
+    def test_get_results_with_schema(self):
+        from airflow.hooks.hive_hooks import HiveServer2Hook
+
+        # Configure
+        sql = "select 1"
+        hook = HiveServer2Hook()
+
+        cursor_mock = mock.MagicMock(
+            __exit__=None,
+            execute=None,
+            fetchall=[],
+        )
+        cursor_mock.__enter__ = cursor_mock
+
+        get_conn_mock = mock.MagicMock(
+            __exit__=None,
+            cursor=cursor_mock,
+        )
+        get_conn_mock.__enter__ = get_conn_mock
+
+        hook.get_conn = get_conn_mock
+
+        # Run
+        hook.get_results(sql, self.nondefault_schema)
+
+        # Verify
+        get_conn_mock.assert_called_with(self.nondefault_schema)
+
+    @mock.patch('airflow.hooks.hive_hooks.HiveServer2Hook.get_results',
+                return_value={'data': []})
+    def test_get_records_with_schema(self, get_results_mock):
+        from airflow.hooks.hive_hooks import HiveServer2Hook
+
+        # Configure
+        sql = "select 1"
+        hook = HiveServer2Hook()
+
+        # Run
+        hook.get_records(sql, self.nondefault_schema)
+
+        # Verify
+        self.assertTrue(get_results_mock.called)
+        (args, kwargs) = get_results_mock.call_args_list[0]
+        self.assertEqual(sql, args[0])
+        self.assertEqual(self.nondefault_schema, kwargs['schema'])
+
+    @mock.patch('airflow.hooks.hive_hooks.HiveServer2Hook.get_results',
+                return_value={'data': [], 'header': []})
+    def test_get_pandas_df_with_schema(self, get_results_mock):
+        from airflow.hooks.hive_hooks import HiveServer2Hook
+
+        # Configure
+        sql = "select 1"
+        hook = HiveServer2Hook()
+
+        # Run
+        hook.get_pandas_df(sql, self.nondefault_schema)
+
+        # Verify
+        self.assertTrue(get_results_mock.called)
+        (args, kwargs) = get_results_mock.call_args_list[0]
+        self.assertEqual(sql, args[0])
+        self.assertEqual(self.nondefault_schema, kwargs['schema'])
