@@ -158,6 +158,14 @@ class CassandraHook(BaseHook, LoggingMixin):
                                                            child_policy_args)
                 return TokenAwarePolicy(child_policy)
 
+    def table_exists(self, table):
+        keyspace = None
+        if '.' in table:
+            keyspace, table = table.split('.', 1)
+        m = self.get_conn().cluster.metadata
+        return (keyspace in m.keyspaces and
+                table in m.keyspaces[keyspace].tables)
+
     def record_exists(self, table, keys):
         """
         Checks if a record exists in Cassandra
