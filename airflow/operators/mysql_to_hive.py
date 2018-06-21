@@ -96,7 +96,7 @@ class MySqlToHiveTransfer(BaseOperator):
         self.tblproperties = tblproperties
 
     @classmethod
-    def type_map(cls, mysql_type):
+    def type_map(cls, mysql_type, precision, scale):
         t = MySQLdb.constants.FIELD_TYPE
         d = {
             t.BIT: 'INT',
@@ -110,6 +110,8 @@ class MySqlToHiveTransfer(BaseOperator):
             t.TINY: 'SMALLINT',
             t.YEAR: 'INT',
             t.TIMESTAMP: 'TIMESTAMP',
+            t.NEWDECIMAL: ('DOUBLE' if 38 < precision
+                           else 'DECIMAL({},{})'.format(precision, scale))
         }
         return d[mysql_type] if mysql_type in d else 'STRING'
 
@@ -125,7 +127,10 @@ class MySqlToHiveTransfer(BaseOperator):
             csv_writer = csv.writer(f, delimiter=self.delimiter, encoding="utf-8")
             field_dict = OrderedDict()
             for field in cursor.description:
-                field_dict[field[0]] = self.type_map(field[1])
+                name, type_code, precision, scale = (field[i] for i in (0, 1, 4, 5))
+                field_dict[name] = self.type_map(type_code,
+                                                 precision - (1 if scale == 0 else 2),
+                                                 scale)
             csv_writer.writerows(cursor)
             f.flush()
             cursor.close()

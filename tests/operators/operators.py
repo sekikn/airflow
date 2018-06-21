@@ -335,7 +335,10 @@ class TransferTests(unittest.TestCase):
                         c2 MEDIUMINT,
                         c3 INT,
                         c4 BIGINT,
-                        c5 TIMESTAMP
+                        c5 TIMESTAMP,
+                        c6 DECIMAL(38,18),
+                        c7 DECIMAL(39),
+                        c8 DECIMAL(65,30)
                     )
                 """.format(mysql_table))
 
@@ -357,6 +360,9 @@ class TransferTests(unittest.TestCase):
             d["c3"] = "BIGINT"
             d["c4"] = "DECIMAL(38,0)"
             d["c5"] = "TIMESTAMP"
+            d["c6"] = "DECIMAL(38,18)"
+            d["c7"] = "DOUBLE"
+            d["c8"] = "DOUBLE"
             self.assertEqual(mock_load_file.call_args[1]["field_dict"], d)
         finally:
             with m.get_conn() as c:
@@ -371,7 +377,7 @@ class TransferTests(unittest.TestCase):
         m = MySqlHook(mysql_conn_id)
 
         try:
-            minmax = (
+            values = (
                 255,
                 65535,
                 16777215,
@@ -381,30 +387,36 @@ class TransferTests(unittest.TestCase):
                 -32768,
                 -8388608,
                 -2147483648,
-                -9223372036854775808
+                -9223372036854775808,
+                12345678901234567890.123456789012345678,
+                123456789012345678901234567890123456789,
+                12345678901234567890123456789012345.123456789012345678901234567890,
             )
 
             with m.get_conn() as c:
                 c.execute("DROP TABLE IF EXISTS {}".format(mysql_table))
                 c.execute("""
                     CREATE TABLE {} (
-                        c0 TINYINT   UNSIGNED,
-                        c1 SMALLINT  UNSIGNED,
-                        c2 MEDIUMINT UNSIGNED,
-                        c3 INT       UNSIGNED,
-                        c4 BIGINT    UNSIGNED,
-                        c5 TINYINT,
-                        c6 SMALLINT,
-                        c7 MEDIUMINT,
-                        c8 INT,
-                        c9 BIGINT
+                        c0  TINYINT   UNSIGNED,
+                        c1  SMALLINT  UNSIGNED,
+                        c2  MEDIUMINT UNSIGNED,
+                        c3  INT       UNSIGNED,
+                        c4  BIGINT    UNSIGNED,
+                        c5  TINYINT,
+                        c6  SMALLINT,
+                        c7  MEDIUMINT,
+                        c8  INT,
+                        c9  BIGINT,
+                        c10 DECIMAL(38,18),
+                        c11 DECIMAL(39),
+                        c12 DECIMAL(65,30)
                     )
                 """.format(mysql_table))
                 c.execute("""
                     INSERT INTO {} VALUES (
-                        {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+                        {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
                     )
-                """.format(mysql_table, *minmax))
+                """.format(mysql_table, *values))
 
             from airflow.operators.mysql_to_hive import MySqlToHiveTransfer
             t = MySqlToHiveTransfer(
@@ -421,7 +433,7 @@ class TransferTests(unittest.TestCase):
             from airflow.hooks.hive_hooks import HiveServer2Hook
             h = HiveServer2Hook()
             r = h.get_records("SELECT * FROM {}".format(hive_table))
-            self.assertEqual(r[0], minmax)
+            self.assertEqual(r[0], values)
         finally:
             with m.get_conn() as c:
                 c.execute("DROP TABLE IF EXISTS {}".format(mysql_table))
