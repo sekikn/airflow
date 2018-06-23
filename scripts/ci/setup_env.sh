@@ -27,7 +27,7 @@ HADOOP_DISTRO=${HADOOP_DISTRO:-"hdp"}
 ONLY_DOWNLOAD=${ONLY_DOWNLOAD:-false}
 ONLY_EXTRACT=${ONLY_EXTRACT:-false}
 
-MINICLUSTER_URL=https://github.com/bolkedebruin/minicluster/releases/download/1.1/minicluster-1.1-SNAPSHOT-bin.zip
+MINICLUSTER_URL=https://github.com/sekikn/minicluster/releases/download/1.0/minicluster-1.0-bin.zip
 
 HIVE_HOME=/tmp/hive
 
@@ -163,4 +163,4 @@ fi
 
 echo "Path = ${PATH}"
 
-java -cp "/tmp/minicluster-1.1-SNAPSHOT/*" com.ing.minicluster.MiniCluster > /dev/null &
+java -cp "/tmp/minicluster-1.0/*" com.ing.minicluster.MiniCluster > /dev/null &

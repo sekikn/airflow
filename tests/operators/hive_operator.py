@@ -27,10 +27,12 @@ import nose
 import six
 
 from airflow import DAG, configuration, operators
+from airflow.operators.hive_operator import HiveOperator
+from airflow.utils import timezone
 configuration.load_test_config()
 
 
-DEFAULT_DATE = datetime.datetime(2015, 1, 1)
+DEFAULT_DATE = timezone.datetime(2015, 1, 1)
 DEFAULT_DATE_ISO = DEFAULT_DATE.isoformat()
 DEFAULT_DATE_DS = DEFAULT_DATE_ISO[:10]
 
@@ -43,6 +45,7 @@ class HiveEnvironmentTest(unittest.TestCase):
         dag = DAG('test_dag_id', default_args=args)
         self.dag = dag
         self.hql = """
+        CREATE DATABASE IF NOT EXISTS airflow;
         USE airflow;
         DROP TABLE IF EXISTS static_babynames_partitioned;
         CREATE TABLE IF NOT EXISTS static_babynames_partitioned (
@@ -54,14 +57,14 @@ class HiveEnvironmentTest(unittest.TestCase):
         PARTITIONED BY (ds string);
         INSERT OVERWRITE TABLE static_babynames_partitioned
             PARTITION(ds='{{ ds }}')
-        SELECT state, year, name, gender, num FROM static_babynames;
+        SELECT state, year, name, gender, num FROM static_babynames_partitioned;
         """
 
 
 class HiveOperatorConfigTest(HiveEnvironmentTest):
 
     def test_hive_airflow_default_config_queue(self):
-        t = operators.hive_operator.HiveOperator(
+        t = HiveOperator(
             task_id='test_default_config_queue',
             hql=self.hql,
             mapred_queue_priority='HIGH',
@@ -77,7 +80,7 @@ class HiveOperatorConfigTest(HiveEnvironmentTest):
 
     def test_hive_airflow_default_config_queue_override(self):
         specific_mapred_queue = 'default'
-        t = operators.hive_operator.HiveOperator(
+        t = HiveOperator(
             task_id='test_default_config_queue',
             hql=self.hql,
             mapred_queue=specific_mapred_queue,
@@ -92,7 +95,7 @@ class HiveOperatorTest(HiveEnvironmentTest):
 
     def test_hiveconf_jinja_translate(self):
         hql = "SELECT ${num_col} FROM ${hiveconf:table};"
-        t = operators.hive_operator.HiveOperator(
+        t = HiveOperator(
             hiveconf_jinja_translate=True,
             task_id='dry_run_basic_hql', hql=hql, dag=self.dag)
         t.prepare_template()
@@ -100,13 +103,40 @@ class HiveOperatorTest(HiveEnvironmentTest):
 
     def test_hiveconf(self):
         hql = "SELECT * FROM ${hiveconf:table} PARTITION (${hiveconf:day});"
-        t = operators.hive_operator.HiveOperator(
+        t = HiveOperator(
             hiveconfs={'table': 'static_babynames', 'day': '{{ ds }}'},
             task_id='dry_run_basic_hql', hql=hql, dag=self.dag)
         t.prepare_template()
         self.assertEqual(
             t.hql,
             "SELECT * FROM ${hiveconf:table} PARTITION (${hiveconf:day});")
+
+    def test_hive(self):
+        t = HiveOperator(
+            task_id='basic_hql', hql=self.hql, dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
+
+    def test_hive_queues(self):
+        t = HiveOperator(
+            task_id='test_hive_queues', hql=self.hql,
+            mapred_queue='default', mapred_queue_priority='HIGH',
+            mapred_job_name='airflow.test_hive_queues',
+            dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
+
+    def test_hive_dryrun(self):
+        t = HiveOperator(
+            task_id='dry_run_basic_hql', hql=self.hql, dag=self.dag)
+        t.dry_run()
+
+    def test_beeline(self):
+        t = HiveOperator(
+            task_id='beeline_hql', hive_cli_conn_id='beeline_default',
+            hql=self.hql, dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
 
 
 if 'AIRFLOW_RUNALL_TESTS' in os.environ:
@@ -115,33 +145,6 @@ if 'AIRFLOW_RUNALL_TESTS' in os.environ:
     import airflow.operators.presto_to_mysql
 
     class HivePrestoTest(HiveEnvironmentTest):
-
-        def test_hive(self):
-            t = operators.hive_operator.HiveOperator(
-                task_id='basic_hql', hql=self.hql, dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_hive_queues(self):
-            t = operators.hive_operator.HiveOperator(
-                task_id='test_hive_queues', hql=self.hql,
-                mapred_queue='default', mapred_queue_priority='HIGH',
-                mapred_job_name='airflow.test_hive_queues',
-                dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_hive_dryrun(self):
-            t = operators.hive_operator.HiveOperator(
-                task_id='dry_run_basic_hql', hql=self.hql, dag=self.dag)
-            t.dry_run()
-
-        def test_beeline(self):
-            t = operators.hive_operator.HiveOperator(
-                task_id='beeline_hql', hive_cli_conn_id='beeline_default',
-                hql=self.hql, dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
 
         def test_presto(self):
             sql = """
@@ -162,23 +165,6 @@ if 'AIRFLOW_RUNALL_TESTS' in os.environ:
                 """,
                 mysql_table='test_static_babynames',
                 mysql_preoperator='TRUNCATE TABLE test_static_babynames;',
-                dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_hdfs_sensor(self):
-            t = operators.sensors.HdfsSensor(
-                task_id='hdfs_sensor_check',
-                filepath='hdfs://user/hive/warehouse/airflow.db/static_babynames',
-                dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_webhdfs_sensor(self):
-            t = operators.sensors.WebHdfsSensor(
-                task_id='webhdfs_sensor_check',
-                filepath='hdfs://user/hive/warehouse/airflow.db/static_babynames',
-                timeout=120,
                 dag=self.dag)
             t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
                   ignore_ti_state=True)
