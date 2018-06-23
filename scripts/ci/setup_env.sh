@@ -163,4 +163,4 @@ fi
 
 echo "Path = ${PATH}"
 
-java -cp "/tmp/minicluster-1.1-SNAPSHOT/*" com.ing.minicluster.MiniCluster > /dev/null &
+java -cp "/tmp/minicluster-1.1-SNAPSHOT/*" com.ing.minicluster.MiniCluster &
