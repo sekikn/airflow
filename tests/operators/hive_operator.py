@@ -56,7 +56,7 @@ class HiveEnvironmentTest(unittest.TestCase):
         PARTITIONED BY (ds string);
         INSERT OVERWRITE TABLE static_babynames_partitioned
             PARTITION(ds='{{ ds }}')
-        SELECT state, year, name, gender, num FROM static_babynames;
+        SELECT state, year, name, gender, num FROM static_babynames_partitioned;
         """
 
 
@@ -103,7 +103,7 @@ class HiveOperatorTest(HiveEnvironmentTest):
     def test_hiveconf(self):
         hql = "SELECT * FROM ${hiveconf:table} PARTITION (${hiveconf:day});"
         t = operators.hive_operator.HiveOperator(
-            hiveconfs={'table': 'static_babynames', 'day': '{{ ds }}'},
+            hiveconfs={'table': 'static_babynames_partitioned', 'day': '{{ ds }}'},
             task_id='dry_run_basic_hql', hql=hql, dag=self.dag)
         t.prepare_template()
         self.assertEqual(
