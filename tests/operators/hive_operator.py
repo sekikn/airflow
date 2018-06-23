@@ -27,10 +27,11 @@ import nose
 import six
 
 from airflow import DAG, configuration, operators
+from airflow.utils import timezone
 configuration.load_test_config()
 
 
-DEFAULT_DATE = datetime.datetime(2015, 1, 1)
+DEFAULT_DATE = timezone.datetime(2015, 1, 1)
 DEFAULT_DATE_ISO = DEFAULT_DATE.isoformat()
 DEFAULT_DATE_DS = DEFAULT_DATE_ISO[:10]
 
@@ -43,6 +44,7 @@ class HiveEnvironmentTest(unittest.TestCase):
         dag = DAG('test_dag_id', default_args=args)
         self.dag = dag
         self.hql = """
+        CREATE DATABASE IF NOT EXISTS airflow;
         USE airflow;
         DROP TABLE IF EXISTS static_babynames_partitioned;
         CREATE TABLE IF NOT EXISTS static_babynames_partitioned (
@@ -108,6 +110,33 @@ class HiveOperatorTest(HiveEnvironmentTest):
             t.hql,
             "SELECT * FROM ${hiveconf:table} PARTITION (${hiveconf:day});")
 
+    def test_hive(self):
+        t = operators.hive_operator.HiveOperator(
+            task_id='basic_hql', hql=self.hql, dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
+
+    def test_hive_queues(self):
+        t = operators.hive_operator.HiveOperator(
+            task_id='test_hive_queues', hql=self.hql,
+            mapred_queue='default', mapred_queue_priority='HIGH',
+            mapred_job_name='airflow.test_hive_queues',
+            dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
+
+    def test_hive_dryrun(self):
+        t = operators.hive_operator.HiveOperator(
+            task_id='dry_run_basic_hql', hql=self.hql, dag=self.dag)
+        t.dry_run()
+
+    def test_beeline(self):
+        t = operators.hive_operator.HiveOperator(
+            task_id='beeline_hql', hive_cli_conn_id='beeline_default',
+            hql=self.hql, dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
+
 
 if 'AIRFLOW_RUNALL_TESTS' in os.environ:
 
@@ -115,33 +144,6 @@ if 'AIRFLOW_RUNALL_TESTS' in os.environ:
     import airflow.operators.presto_to_mysql
 
     class HivePrestoTest(HiveEnvironmentTest):
-
-        def test_hive(self):
-            t = operators.hive_operator.HiveOperator(
-                task_id='basic_hql', hql=self.hql, dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_hive_queues(self):
-            t = operators.hive_operator.HiveOperator(
-                task_id='test_hive_queues', hql=self.hql,
-                mapred_queue='default', mapred_queue_priority='HIGH',
-                mapred_job_name='airflow.test_hive_queues',
-                dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_hive_dryrun(self):
-            t = operators.hive_operator.HiveOperator(
-                task_id='dry_run_basic_hql', hql=self.hql, dag=self.dag)
-            t.dry_run()
-
-        def test_beeline(self):
-            t = operators.hive_operator.HiveOperator(
-                task_id='beeline_hql', hive_cli_conn_id='beeline_default',
-                hql=self.hql, dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
 
         def test_presto(self):
             sql = """
