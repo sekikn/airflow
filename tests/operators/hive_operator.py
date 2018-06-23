@@ -137,6 +137,32 @@ class HiveOperatorTest(HiveEnvironmentTest):
         t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
               ignore_ti_state=True)
 
+    def test_hdfs_sensor(self):
+        t = operators.sensors.HdfsSensor(
+            task_id='hdfs_sensor_check',
+            filepath='hdfs://user/hive/warehouse/airflow.db/static_babynames_partitioned',
+            dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
+
+    def test_webhdfs_sensor(self):
+        t = operators.sensors.WebHdfsSensor(
+            task_id='webhdfs_sensor_check',
+            filepath='hdfs://user/hive/warehouse/airflow.db/static_babynames_partitioned',
+            timeout=120,
+            dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
+
+    def test_sql_sensor(self):
+        t = operators.sensors.SqlSensor(
+            task_id='hdfs_sensor_check',
+            conn_id='presto_default',
+            sql="SELECT 'x' FROM airflow.static_babynames_partitioned LIMIT 1;",
+            dag=self.dag)
+        t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
+              ignore_ti_state=True)
+
 
 if 'AIRFLOW_RUNALL_TESTS' in os.environ:
 
@@ -164,32 +190,6 @@ if 'AIRFLOW_RUNALL_TESTS' in os.environ:
                 """,
                 mysql_table='test_static_babynames',
                 mysql_preoperator='TRUNCATE TABLE test_static_babynames;',
-                dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_hdfs_sensor(self):
-            t = operators.sensors.HdfsSensor(
-                task_id='hdfs_sensor_check',
-                filepath='hdfs://user/hive/warehouse/airflow.db/static_babynames',
-                dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_webhdfs_sensor(self):
-            t = operators.sensors.WebHdfsSensor(
-                task_id='webhdfs_sensor_check',
-                filepath='hdfs://user/hive/warehouse/airflow.db/static_babynames',
-                timeout=120,
-                dag=self.dag)
-            t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
-                  ignore_ti_state=True)
-
-        def test_sql_sensor(self):
-            t = operators.sensors.SqlSensor(
-                task_id='hdfs_sensor_check',
-                conn_id='presto_default',
-                sql="SELECT 'x' FROM airflow.static_babynames LIMIT 1;",
                 dag=self.dag)
             t.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE,
                   ignore_ti_state=True)
