@@ -1865,7 +1865,7 @@ class TestCli(unittest.TestCase):
 
     def test_cli_version(self):
         with mock.patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-            cli.connections_delete(self.parser.parse_args(['version']))
+            cli.version(self.parser.parse_args(['version']))
             stdout = mock_stdout.getvalue()
         self.assertIn(version, stdout)
 
