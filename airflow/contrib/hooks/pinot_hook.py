@@ -17,9 +17,165 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import os
+import subprocess
+
 from pinotdb import connect
 
+from airflow.exceptions import AirflowException
+from airflow.hooks.base_hook import BaseHook
 from airflow.hooks.dbapi_hook import DbApiHook
+
+
+class PinotAdminHook(BaseHook):
+
+    def __init__(self,
+                 conn_id="pinot_admin_default",
+                 cmd_path="pinot-admin.sh",
+                 java_opts="-Dpinot.admin.system.exit=true"):
+        conn = self.get_connection(conn_id)
+        self.host = conn.host
+        self.port = conn.port
+        self.cmd_path = conn.extra_dejson.get("cmd_path", cmd_path)
+        self.java_opts = conn.extra_dejson.get("java_opts", java_opts)
+        self.conn = conn
+
+    def get_conn(self):
+        return self.conn
+
+    def add_schema(self, schema_file, exec=True):
+        cmd = ["AddSchema"]
+        cmd += ["-controllerHost", self.host]
+        cmd += ["-controllerPort", str(self.port)]
+        cmd += ["-schemaFile", schema_file]
+        if exec:
+            cmd += ["-exec"]
+        self.run_cli(cmd)
+
+    def add_table(self, file_path, exec=True):
+        cmd = ["AddTable"]
+        cmd += ["-controllerHost", self.host]
+        cmd += ["-controllerPort", str(self.port)]
+        cmd += ["-filePath", file_path]
+        if exec:
+            cmd += ["-exec"]
+        self.run_cli(cmd)
+
+    def create_segment(self,
+                       generator_config_file=None,
+                       data_dir=None,
+                       format=None,
+                       out_dir=None,
+                       overwrite=None,
+                       table_name=None,
+                       segment_name=None,
+                       time_column_name=None,
+                       schema_file=None,
+                       reader_config_file=None,
+                       enable_star_tree_index=None,
+                       star_tree_index_spec_file=None,
+                       hll_size=None,
+                       hll_columns=None,
+                       hll_suffix=None,
+                       num_threads=None,
+                       post_creation_verification=None,
+                       retry=None):
+        cmd = ["CreateSegment"]
+
+        if generator_config_file:
+            cmd += ["-generatorConfigFile", generator_config_file]
+
+        if data_dir:
+            cmd += ["-dataDir", data_dir]
+
+        if format:
+            cmd += ["-format", format]
+
+        if out_dir:
+            cmd += ["-outDir", out_dir]
+
+        if overwrite:
+            cmd += ["-overwrite", overwrite]
+
+        if table_name:
+            cmd += ["-tableName", table_name]
+
+        if segment_name:
+            cmd += ["-segmentName", segment_name]
+
+        if time_column_name:
+            cmd += ["-timeColumnName", time_column_name]
+
+        if schema_file:
+            cmd += ["-schemaFile", schema_file]
+
+        if reader_config_file:
+            cmd += ["-readerConfigFile", reader_config_file]
+
+        if enable_star_tree_index:
+            cmd += ["-enableStarTreeIndex", enable_star_tree_index]
+
+        if star_tree_index_spec_file:
+            cmd += ["-starTreeIndexSpecFile", star_tree_index_spec_file]
+
+        if hll_size:
+            cmd += ["-hllSize", hll_size]
+
+        if hll_columns:
+            cmd += ["-hllColumns", hll_columns]
+
+        if hll_suffix:
+            cmd += ["-hllSuffix", hll_suffix]
+
+        if num_threads:
+            cmd += ["-numThreads", num_threads]
+
+        if post_creation_verification:
+            cmd += ["-postCreationVerification", post_creation_verification]
+
+        if retry:
+            cmd += ["-retry", retry]
+
+        self.run_cli(cmd)
+
+    def upload_segment(self, segment_dir, table_name=None):
+        cmd = ["UploadSegment"]
+        cmd += ["-controllerHost", self.conn.host]
+        cmd += ["-controllerPort", str(self.conn.port)]
+        cmd += ["-segmentDir", segment_dir]
+        if table_name:
+            cmd += ["-tableName", table_name]
+        self.run_cli(cmd)
+
+    def run_cli(self, cmd, verbose=True):
+        cmd.insert(0, self.cmd_path)
+
+        env = None
+        if self.java_opts:
+            env = {"JAVA_OPTS": self.java_opts}.update(os.environ)
+
+        if verbose:
+            self.log.info(" ".join(cmd))
+
+        sp = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            close_fds=True,
+            env=env)
+
+        stdout = ""
+        for line in iter(sp.stdout.readline, b""):
+            stdout += line.decode("utf-8")
+            if verbose:
+                self.log.info(stdout.strip())
+
+        sp.wait()
+
+        if sp.returncode:
+            raise AirflowException(stdout)
+
+        return stdout
 
 
 class PinotDbApiHook(DbApiHook):
