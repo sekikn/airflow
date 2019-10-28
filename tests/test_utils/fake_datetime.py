@@ -16,16 +16,14 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""
-This module is deprecated. Please use `airflow.providers.google.cloud.hooks.vision`.
-"""
 
-import warnings
+from datetime import datetime
 
-# pylint: disable=unused-import
-from airflow.providers.google.cloud.hooks.vision import CloudVisionHook  # noqa
 
-warnings.warn(
-    "This module is deprecated. Please use `airflow.providers.google.cloud.hooks.vision`.",
-    DeprecationWarning, stacklevel=2
-)
+class FakeDatetime(datetime):
+    """
+    A fake replacement for datetime that can be mocked for testing.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        return datetime.__new__(datetime, *args, **kwargs)
