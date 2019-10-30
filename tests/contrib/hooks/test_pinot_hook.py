@@ -21,7 +21,58 @@
 import unittest
 from unittest import mock
 
-from airflow.contrib.hooks.pinot_hook import PinotDbApiHook
+from airflow.contrib.hooks.pinot_hook import PinotAdminHook, PinotDbApiHook
+
+
+class TestPinotAdminHook(unittest.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.conn = conn = mock.MagicMock()
+        self.conn.host = 'host'
+        self.conn.port = '1000'
+        self.conn.extra_dejson = {'endpoint': 'pql'}
+
+        class PinotAdminHookTest(PinotAdminHook):
+            def get_connection(self, conn_id):
+                return conn
+
+        self.db_hook = PinotAdminHookTest()
+
+    @mock.patch('airflow.contrib.hooks.pinot_hook.PinotAdminHook.run_cli')
+    def test_add_schema(self, mock_run_cli):
+        params = ["schema_file", False]
+        self.db_hook.add_schema(*params)
+        self.assertEqual(mock_run_cli.call_count, 1)
+        mock_run_cli.assert_called_with(['AddSchema',
+                                         '-controllerHost', self.conn.host,
+                                         '-controllerPort', self.conn.port,
+                                         '-schemaFile', params[0]])
+
+    @mock.patch('airflow.contrib.hooks.pinot_hook.PinotAdminHook.run_cli')
+    def test_add_table(self, mock_run_cli):
+        params = ["config_file", False]
+        self.db_hook.add_table(*params)
+        self.assertEqual(mock_run_cli.call_count, 1)
+        mock_run_cli.assert_called_with(['AddTable',
+                                         '-controllerHost', self.conn.host,
+                                         '-controllerPort', self.conn.port,
+                                         '-filePath', params[0]])
+
+    @mock.patch('airflow.contrib.hooks.pinot_hook.PinotAdminHook.run_cli')
+    def test_create_segment(self, mock_run_cli):
+        ...
+        # assert run_cli called with correct parameters
+
+    @mock.patch('airflow.contrib.hooks.pinot_hook.PinotAdminHook.run_cli')
+    def test_upload_segment(self, mock_run_cli):
+        ...
+        # assert run_cli called with correct parameters
+
+    @mock.patch('subprocess.Popen')
+    def test_run_cli(self, mock_popen):
+        ...
+        # assert Popen called with correct parameters
 
 
 class TestPinotDbApiHook(unittest.TestCase):

@@ -35,7 +35,7 @@ class PinotAdminHook(BaseHook):
                  java_opts="-Dpinot.admin.system.exit=true"):
         conn = self.get_connection(conn_id)
         self.host = conn.host
-        self.port = conn.port
+        self.port = str(conn.port)
         self.cmd_path = conn.extra_dejson.get("cmd_path", cmd_path)
         self.java_opts = conn.extra_dejson.get("java_opts", java_opts)
         self.conn = conn
@@ -46,7 +46,7 @@ class PinotAdminHook(BaseHook):
     def add_schema(self, schema_file, exec=True):
         cmd = ["AddSchema"]
         cmd += ["-controllerHost", self.host]
-        cmd += ["-controllerPort", str(self.port)]
+        cmd += ["-controllerPort", self.port]
         cmd += ["-schemaFile", schema_file]
         if exec:
             cmd += ["-exec"]
@@ -55,7 +55,7 @@ class PinotAdminHook(BaseHook):
     def add_table(self, file_path, exec=True):
         cmd = ["AddTable"]
         cmd += ["-controllerHost", self.host]
-        cmd += ["-controllerPort", str(self.port)]
+        cmd += ["-controllerPort", self.port]
         cmd += ["-filePath", file_path]
         if exec:
             cmd += ["-exec"]
@@ -141,7 +141,7 @@ class PinotAdminHook(BaseHook):
     def upload_segment(self, segment_dir, table_name=None):
         cmd = ["UploadSegment"]
         cmd += ["-controllerHost", self.conn.host]
-        cmd += ["-controllerPort", str(self.conn.port)]
+        cmd += ["-controllerPort", self.conn.port]
         cmd += ["-segmentDir", segment_dir]
         if table_name:
             cmd += ["-tableName", table_name]
