@@ -148,17 +148,18 @@ class PinotAdminHook(BaseHook):
         self.run_cli(cmd)
 
     def run_cli(self, cmd, verbose=True):
-        cmd.insert(0, self.cmd_path)
+        command = [self.cmd_path]
+        command.extend(cmd)
 
         env = None
         if self.java_opts:
             env = {"JAVA_OPTS": self.java_opts}.update(os.environ)
 
         if verbose:
-            self.log.info(" ".join(cmd))
+            self.log.info(" ".join(command))
 
         sp = subprocess.Popen(
-            cmd,
+            command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             close_fds=True,
