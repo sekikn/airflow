@@ -41,6 +41,20 @@ assists users migrating to a new version.
 
 ## Airflow Master
 
+### Migration of AWS components
+
+All AWS components (hooks, operators, sensors, example DAGs) will be grouped together as decided in
+[AIP-21](https://cwiki.apache.org/confluence/display/AIRFLOW/AIP-21%3A+Changes+in+import+paths). Migrated
+components remain backwards compatible but raise a `DeprecationWarning` when imported from the old module.
+Migrated are:
+
+| Old path                                                     | New path                                                 |
+| ------------------------------------------------------------ | -------------------------------------------------------- |
+| airflow.hooks.S3_hook.S3Hook                                 | airflow.providers.aws.hooks.s3.S3Hook                    |
+| airflow.contrib.hooks.aws_athena_hook.AWSAthenaHook          | airflow.providers.aws.hooks.athena.AWSAthenaHook         |
+| airflow.contrib.operators.aws_athena_operator.AWSAthenaOperator | airflow.providers.aws.operators.athena.AWSAthenaOperator |
+| airflow.contrib.sensors.aws_athena_sensor.AthenaSensor       | airflow.providers.aws.sensors.athena.AthenaSensor        |
+
 ### Additional arguments passed to BaseOperator cause an exception
 
 Previous versions of Airflow took additional arguments and displayed a message on the console. When the
@@ -202,19 +216,19 @@ The following table shows changes in import paths.
 |airflow.contrib.hooks.gcp_compute_hook.GceHook                                                                    |airflow.gcp.hooks.compute.ComputeEngineHook                                                                |
 |airflow.contrib.hooks.gcp_container_hook.GKEClusterHook                                                           |airflow.gcp.hooks.kubernetes_engine.GKEClusterHook                                                         |
 |airflow.contrib.hooks.gcp_dataflow_hook.DataFlowHook                                                              |airflow.gcp.hooks.dataflow.DataFlowHook                                                                    |
-|airflow.contrib.hooks.gcp_dataproc_hook.DataProcHook                                                              |airflow.gcp.hooks.dataproc.DataProcHook                                                                    |
+|airflow.contrib.hooks.gcp_dataproc_hook.DataProcHook                                                              |airflow.gcp.hooks.dataproc.DataprocHook                                                                    |
 |airflow.contrib.hooks.gcp_dlp_hook.CloudDLPHook                                                                   |airflow.gcp.hooks.dlp.CloudDLPHook                                                                         |
-|airflow.contrib.hooks.gcp_function_hook.GcfHook                                                                   |airflow.gcp.hooks.functions.GcfHook                                                                        |
+|airflow.contrib.hooks.gcp_function_hook.GcfHook                                                                   |airflow.gcp.hooks.functions.CloudFunctionsHook                                                                        |
 |airflow.contrib.hooks.gcp_kms_hook.GoogleCloudKMSHook                                                             |airflow.gcp.hooks.kms.GoogleCloudKMSHook                                                                   |
 |airflow.contrib.hooks.gcp_mlengine_hook.MLEngineHook                                                              |airflow.gcp.hooks.mlengine.MLEngineHook                                                                    |
 |airflow.contrib.hooks.gcp_natural_language_hook.CloudNaturalLanguageHook                                          |airflow.gcp.hooks.natural_language.CloudNaturalLanguageHook                                                |
 |airflow.contrib.hooks.gcp_pubsub_hook.PubSubHook                                                                  |airflow.gcp.hooks.pubsub.PubSubHook                                                                        |
-|airflow.contrib.hooks.gcp_spanner_hook.CloudSpannerHook                                                           |airflow.gcp.hooks.spanner.CloudSpannerHook                                                                 |
+|airflow.contrib.hooks.gcp_spanner_hook.CloudSpannerHook                                                           |airflow.gcp.hooks.spanner.SpannerHook                                                                 |
 |airflow.contrib.hooks.gcp_speech_to_text_hook.GCPSpeechToTextHook                                                 |airflow.gcp.hooks.speech_to_text.GCPSpeechToTextHook                                                       |
 |airflow.contrib.hooks.gcp_sql_hook.CloudSqlDatabaseHook                                                           |airflow.gcp.hooks.cloud_sql.CloudSqlDatabaseHook                                                           |
 |airflow.contrib.hooks.gcp_sql_hook.CloudSqlHook                                                                   |airflow.gcp.hooks.cloud_sql.CloudSqlHook                                                                   |
 |airflow.contrib.hooks.gcp_tasks_hook.CloudTasksHook                                                               |airflow.gcp.hooks.tasks.CloudTasksHook                                                                     |
-|airflow.contrib.hooks.gcp_text_to_speech_hook.GCPTextToSpeechHook                                                 |airflow.gcp.hooks.text_to_speech.GCPTextToSpeechHook                                                       |
+|airflow.contrib.hooks.gcp_text_to_speech_hook.GCPTextToSpeechHook                                                 |airflow.gcp.hooks.text_to_speech.CloudTextToSpeechHook                                                       |
 |airflow.contrib.hooks.gcp_transfer_hook.GCPTransferServiceHook                                                    |airflow.gcp.hooks.cloud_storage_transfer_service.GCPTransferServiceHook                                    |
 |airflow.contrib.hooks.gcp_translate_hook.CloudTranslateHook                                                       |airflow.gcp.hooks.translate.CloudTranslateHook                                                             |
 |airflow.contrib.hooks.gcp_video_intelligence_hook.CloudVideoIntelligenceHook                                      |airflow.gcp.hooks.video_intelligence.CloudVideoIntelligenceHook                                            |

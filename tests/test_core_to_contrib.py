@@ -37,7 +37,7 @@ HOOK = [
         "airflow.contrib.hooks.gcp_dataflow_hook.DataFlowHook",
     ),
     (
-        "airflow.gcp.hooks.dataproc.DataProcHook",
+        "airflow.gcp.hooks.dataproc.DataprocHook",
         "airflow.contrib.hooks.gcp_dataproc_hook.DataProcHook",
     ),
     (
@@ -45,7 +45,7 @@ HOOK = [
         "airflow.contrib.hooks.gcp_dlp_hook.CloudDLPHook",
     ),
     (
-        "airflow.gcp.hooks.functions.GcfHook",
+        "airflow.gcp.hooks.functions.CloudFunctionsHook",
         "airflow.contrib.hooks.gcp_function_hook.GcfHook",
     ),
     (
@@ -57,7 +57,7 @@ HOOK = [
         "airflow.contrib.hooks.gcp_mlengine_hook.MLEngineHook",
     ),
     (
-        "airflow.gcp.hooks.spanner.CloudSpannerHook",
+        "airflow.gcp.hooks.spanner.SpannerHook",
         "airflow.contrib.hooks.gcp_spanner_hook.CloudSpannerHook",
     ),
     (
@@ -65,7 +65,7 @@ HOOK = [
         "airflow.contrib.hooks.gcp_speech_to_text_hook.GCPSpeechToTextHook",
     ),
     (
-        "airflow.gcp.hooks.text_to_speech.GCPTextToSpeechHook",
+        "airflow.gcp.hooks.text_to_speech.CloudTextToSpeechHook",
         "airflow.contrib.hooks.gcp_text_to_speech_hook.GCPTextToSpeechHook",
     ),
     (
@@ -127,6 +127,14 @@ HOOK = [
     (
         "airflow.gcp.hooks.bigquery.BigQueryHook",
         "airflow.contrib.hooks.bigquery_hook.BigQueryHook",
+    ),
+    (
+        "airflow.providers.aws.hooks.athena.AWSAthenaHook",
+        "airflow.contrib.hooks.aws_athena_hook.AWSAthenaHook",
+    ),
+    (
+        "airflow.providers.aws.hooks.s3.S3Hook",
+        "airflow.hooks.S3_hook.S3Hook",
     ),
 ]
 OPERATOR = [
@@ -733,6 +741,10 @@ OPERATOR = [
         "airflow.gcp.operators.gcs.GoogleCloudStorageCreateBucketOperator",
         "airflow.contrib.operators.gcs_operator.GoogleCloudStorageCreateBucketOperator",
     ),
+    (
+        "airflow.providers.aws.operators.athena.AWSAthenaOperator",
+        "airflow.contrib.operators.aws_athena_operator.AWSAthenaOperator",
+    ),
 ]
 SENSOR = [
     (
@@ -769,6 +781,10 @@ SENSOR = [
     (
         "airflow.gcp.sensors.gcs.GoogleCloudStorageUploadSessionCompleteSensor",
         "airflow.contrib.sensors.gcs_sensor.GoogleCloudStorageUploadSessionCompleteSensor",
+    ),
+    (
+        "airflow.providers.aws.sensors.athena.AthenaSensor",
+        "airflow.contrib.sensors.aws_athena_sensor.AthenaSensor",
     ),
 ]
 ALL = HOOK + OPERATOR + SENSOR

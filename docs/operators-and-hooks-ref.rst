@@ -305,9 +305,9 @@ These integrations allow you to perform various operations within the Amazon Web
      - Sensors
 
    * - `Amazon Athena <https://aws.amazon.com/athena/>`__
-     - :mod:`airflow.contrib.hooks.aws_athena_hook`
-     - :mod:`airflow.contrib.operators.aws_athena_operator`
-     - :mod:`airflow.contrib.sensors.aws_athena_sensor`
+     - :mod:`airflow.providers.aws.hooks.athena`
+     - :mod:`airflow.providers.aws.operators.athena`
+     - :mod:`airflow.providers.aws.sensors.athena`
 
    * - `AWS Batch <https://aws.amazon.com/athena/>`__
      -
@@ -359,7 +359,7 @@ These integrations allow you to perform various operations within the Amazon Web
      - :mod:`airflow.contrib.sensors.aws_redshift_cluster_sensor`
 
    * - `Amazon Simple Storage Service (S3) <https://aws.amazon.com/s3/>`__
-     - :mod:`airflow.hooks.S3_hook`
+     - :mod:`airflow.providers.aws.hooks.s3`
      - :mod:`airflow.operators.s3_file_transform_operator`,
        :mod:`airflow.contrib.operators.s3_copy_object_operator`,
        :mod:`airflow.contrib.operators.s3_delete_objects_operator`,
