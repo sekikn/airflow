@@ -30,16 +30,17 @@ from airflow.hooks.dbapi_hook import DbApiHook
 class PinotAdminHook(BaseHook):
     """
     This hook is a wrapper around the pinot-admin.sh script.
-    For now, this hook only implements small subset of its subcommands
-    which are required to ingest offline data into Pinot,
-    i.e., AddSchema, AddTable, CreateSegment, and UploadSegment.
+    For now, only small subset of its subcommands are implemented,
+    which are required to ingest offline data into Apache Pinot
+    (i.e., AddSchema, AddTable, CreateSegment, and UploadSegment).
     Their command options are based on Pinot v0.1.0.
 
-    Unfortunately, as of v0.1.0, pinot-admin.sh always returns code 0.
-    To address this, this hook evaluates the result based on the output
-    message if the pinot_admin_system_exit flag is set to false.
-    This limitation is supposed to be improved in the next release,
-    which will include the following PR:
+    Unfortunately, as of v0.1.0, pinot-admin.sh always exits with
+    statue code 0. To address this behavior, users can use the
+    pinot_admin_system_exit flag. If its value is set to false,
+    this hook evaluates the result based on the output message
+    instead of the status code. This behavior is supposed to be
+    improved in the next release, which will include the following PR:
 
     https://github.com/apache/incubator-pinot/pull/4110
 
@@ -192,10 +193,10 @@ class PinotAdminHook(BaseHook):
             env=env)
 
         stdout = ""
-        for line in iter(sp.stdout.readline, b""):
-            stdout += line.decode("utf-8")
+        for line in iter(sp.stdout):
+            stdout += line
             if verbose:
-                self.log.info(stdout.strip())
+                self.log.info(line.strip())
 
         sp.wait()
 
