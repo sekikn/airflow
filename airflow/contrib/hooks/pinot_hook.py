@@ -28,16 +28,41 @@ from airflow.hooks.dbapi_hook import DbApiHook
 
 
 class PinotAdminHook(BaseHook):
+    """
+    This hook is a wrapper around the pinot-admin.sh script.
+    For now, this hook only implements small subset of its subcommands
+    which are required to ingest offline data into Pinot,
+    i.e., AddSchema, AddTable, CreateSegment, and UploadSegment.
+    Their command options are based on Pinot v0.1.0.
 
+    NOTE: Unfortunately, as of v0.1.0, pinot-admin.sh always returns 0.
+    So this hook evaluates the result based on the output message
+    if the pinot_admin_system_exit flag is set to false.
+
+    This is supposed to be improved in the next release,
+    which will include the following PR:
+
+    https://github.com/apache/incubator-pinot/pull/4110
+
+    :param conn_id: The name of the connection to use.
+    :type conn_id: str
+    :param cmd_path: The filepath to the pinot-admin.sh executable
+    :type cmd_path: str
+    :param pinot_admin_system_exit: If true, the result is evaluated based on the status code.
+                                    Otherwise, the result is evaluated as a failure if "Error" or
+                                    "Exception" is in the output message.
+    :type pinot_admin_system_exit: bool
+    """
     def __init__(self,
                  conn_id="pinot_admin_default",
                  cmd_path="pinot-admin.sh",
-                 java_opts="-Dpinot.admin.system.exit=true"):
+                 pinot_admin_system_exit=False):
         conn = self.get_connection(conn_id)
         self.host = conn.host
         self.port = str(conn.port)
         self.cmd_path = conn.extra_dejson.get("cmd_path", cmd_path)
-        self.java_opts = conn.extra_dejson.get("java_opts", java_opts)
+        self.pinot_admin_system_exit = conn.extra_dejson.get("pinot_admin_system_exit",
+                                                             pinot_admin_system_exit)
         self.conn = conn
 
     def get_conn(self):
@@ -152,8 +177,10 @@ class PinotAdminHook(BaseHook):
         command.extend(cmd)
 
         env = None
-        if self.java_opts:
-            env = {"JAVA_OPTS": self.java_opts}.update(os.environ)
+        if self.pinot_admin_system_exit:
+            env = os.environ.copy()
+            java_opts = "-Dpinot.admin.system.exit=true " + os.environ.get("JAVA_OPTS", "")
+            env.update({"JAVA_OPTS": java_opts})
 
         if verbose:
             self.log.info(" ".join(command))
@@ -173,7 +200,8 @@ class PinotAdminHook(BaseHook):
 
         sp.wait()
 
-        if sp.returncode:
+        if ((self.pinot_admin_system_exit and sp.returncode) or
+                ("Error" in stdout or "Exception" in stdout)):
             raise AirflowException(stdout)
 
         return stdout
