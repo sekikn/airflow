@@ -35,11 +35,10 @@ class PinotAdminHook(BaseHook):
     i.e., AddSchema, AddTable, CreateSegment, and UploadSegment.
     Their command options are based on Pinot v0.1.0.
 
-    NOTE: Unfortunately, as of v0.1.0, pinot-admin.sh always returns 0.
-    So this hook evaluates the result based on the output message
-    if the pinot_admin_system_exit flag is set to false.
-
-    This is supposed to be improved in the next release,
+    Unfortunately, as of v0.1.0, pinot-admin.sh always returns code 0.
+    To address this, this hook evaluates the result based on the output
+    message if the pinot_admin_system_exit flag is set to false.
+    This limitation is supposed to be improved in the next release,
     which will include the following PR:
 
     https://github.com/apache/incubator-pinot/pull/4110
