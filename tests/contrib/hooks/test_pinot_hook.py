@@ -120,7 +120,7 @@ class TestPinotAdminHook(unittest.TestCase):
     def test_run_cli_success(self, mock_popen):
         mock_proc = mock.MagicMock()
         mock_proc.returncode = 0
-        mock_proc.stdout = io.StringIO('')
+        mock_proc.stdout = io.BytesIO(b'')
         mock_popen.return_value = mock_proc
 
         params = ["foo", "bar", "baz"]
@@ -134,10 +134,10 @@ class TestPinotAdminHook(unittest.TestCase):
 
     @mock.patch('subprocess.Popen')
     def test_run_cli_failure_error_message(self, mock_popen):
-        msg = "Exception caught"
+        msg = b"Exception caught"
         mock_proc = mock.MagicMock()
         mock_proc.returncode = 0
-        mock_proc.stdout = io.StringIO(msg)
+        mock_proc.stdout = io.BytesIO(msg)
         mock_popen.return_value = mock_proc
 
         params = ["foo", "bar", "baz"]
@@ -154,7 +154,7 @@ class TestPinotAdminHook(unittest.TestCase):
     def test_run_cli_failure_status_code(self, mock_popen):
         mock_proc = mock.MagicMock()
         mock_proc.returncode = 1
-        mock_proc.stdout = io.StringIO("")
+        mock_proc.stdout = io.BytesIO(b'')
         mock_popen.return_value = mock_proc
 
         self.db_hook.pinot_admin_system_exit = True

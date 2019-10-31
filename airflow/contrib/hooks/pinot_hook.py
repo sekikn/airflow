@@ -165,8 +165,8 @@ class PinotAdminHook(BaseHook):
 
     def upload_segment(self, segment_dir, table_name=None):
         cmd = ["UploadSegment"]
-        cmd += ["-controllerHost", self.conn.host]
-        cmd += ["-controllerPort", self.conn.port]
+        cmd += ["-controllerHost", self.host]
+        cmd += ["-controllerPort", self.port]
         cmd += ["-segmentDir", segment_dir]
         if table_name:
             cmd += ["-tableName", table_name]
@@ -183,6 +183,7 @@ class PinotAdminHook(BaseHook):
             env.update({"JAVA_OPTS": java_opts})
 
         if verbose:
+            print(command)
             self.log.info(" ".join(command))
 
         sp = subprocess.Popen(
@@ -194,12 +195,16 @@ class PinotAdminHook(BaseHook):
 
         stdout = ""
         for line in iter(sp.stdout):
+            line = line.decode()
             stdout += line
             if verbose:
                 self.log.info(line.strip())
 
         sp.wait()
 
+        # As of Pinot v0.1.0, either of "Error: ..." or "Exception caught: ..."
+        # is expected to be in the output messages. See:
+        # https://github.com/apache/incubator-pinot/blob/release-0.1.0/pinot-tools/src/main/java/org/apache/pinot/tools/admin/PinotAdministrator.java#L98-L101
         if ((self.pinot_admin_system_exit and sp.returncode) or
                 ("Error" in stdout or "Exception" in stdout)):
             raise AirflowException(stdout)
